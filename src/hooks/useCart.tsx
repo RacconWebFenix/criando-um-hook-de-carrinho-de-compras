@@ -37,7 +37,9 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
       // Utiliza-se outra contate mara manter a imutabilidade no objeto cart
       const updatedCart = [...cart];
       // Verificando se o prodito existe
-      const productExists = updatedCart.find((p) => p.id === productId);
+      const productExists = updatedCart.find(
+        (product) => product.id === productId
+      );
 
       //Verificando o Stock de Produtos
       const stock = await api.get(`/stock/${productId}`);
@@ -72,7 +74,7 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
 
       setCart(updatedCart);
 
-      localStorage.setItem("@RocketShoes:cart", JSON.stringify(cart));
+      localStorage.setItem("@RocketShoes:cart", JSON.stringify(updatedCart));
 
       toast.success("Produto adicionado ao carrinho");
     } catch {
@@ -83,12 +85,14 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
   const removeProduct = (productId: number) => {
     try {
       const updatedCart = [...cart];
-      const productIndex = updatedCart.findIndex((p) => p.id === productId);
+      const productIndex = updatedCart.findIndex(
+        (product) => product.id === productId
+      );
       // Primeiro vericar se o produto existe e remove caso o FindIdex retorne > 0 pois pode retornar -1
       if (productIndex >= 0) {
         updatedCart.splice(productIndex, 1);
         setCart(updatedCart);
-        localStorage.setItem("@RocketShoes:cart", JSON.stringify(cart));
+        localStorage.setItem("@RocketShoes:cart", JSON.stringify(updatedCart));
       } else {
         //essa declaração força a ir direto para o catch caso der erro na aplicação
         throw Error();
@@ -103,15 +107,34 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
     amount,
   }: UpdateProductAmount) => {
     try {
-      // verifica a quantidade do produto 
+      // verifica a quantidade do produto
       if (amount <= 0) {
         return;
       }
       const stock = await api.get(`/stock/${productId}`);
 
-      
+      const stockAmount = stock.data.amount;
+
+      if (amount > stockAmount) {
+        toast.error("Quantidade solicitada fora de estoque");
+        return;
+      }
+      //pegando as informação do carrinho para update
+      const updatedCart = [...cart];
+
+      const productExists = updatedCart.find(
+        (product) => product.id === productId
+      );
+
+      if (productExists) {
+        productExists.amount = amount;
+        setCart(updatedCart);
+        localStorage.setItem("@RocketShoes:cart", JSON.stringify(updatedCart));
+      } else {
+        throw Error();
+      }
     } catch {
-      toast.error("Erro na alteração do produto");
+      toast.error("Erro na alteração de quantidade do produto");
     }
   };
 
